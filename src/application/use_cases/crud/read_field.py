@@ -2,20 +2,19 @@
 from typing import Optional
 from src.application.dtos.response.field_response import FieldResponse
 from src.domain.interfaces.repository import IFieldRepository
+from src.domain.entities.field import Field # Ensure Field is imported
+from .base import ReadUseCase # Import the base class
 
-class ReadFieldUseCase:
+class ReadFieldUseCase(ReadUseCase[Field, FieldResponse, IFieldRepository, str]):
     def __init__(self, field_repository: IFieldRepository):
-        self.field_repository = field_repository
+        super().__init__(field_repository, FieldResponse)
 
     def execute(self, field_code: str) -> Optional[FieldResponse]:
         """
-        Retrieves a field by its code.
+        Retrieves a field by its code. Overrides base to use get_by_field_code.
         """
-        # Assumes IFieldRepository has a method get_by_field_code,
-        # or the concrete FieldDuckDBRepository implements it.
-        # FieldDuckDBRepository has get_by_field_code(self, field_code: str) -> Optional[Field]:
-        field_entity = self.field_repository.get_by_field_code(field_code)
+        field_entity = self.repository.get_by_field_code(field_code)
         
         if field_entity:
-            return FieldResponse(**field_entity.model_dump())
+            return self.response_dto_type.from_entity(field_entity)
         return None

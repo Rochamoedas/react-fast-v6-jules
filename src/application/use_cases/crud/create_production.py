@@ -3,17 +3,18 @@ from src.domain.entities.production import Production
 from src.application.dtos.request.production_request import ProductionRequest
 from src.application.dtos.response.production_response import ProductionResponse
 from src.domain.interfaces.repository import IProductionRepository
+from .base import CreateUseCase # Import the base class
 
-class CreateProductionUseCase:
+class CreateProductionUseCase(CreateUseCase[Production, ProductionRequest, ProductionResponse, IProductionRepository]):
     def __init__(self, production_repository: IProductionRepository):
-        self.production_repository = production_repository
+        super().__init__(production_repository, Production, ProductionResponse)
 
     def execute(self, production_request_dto: ProductionRequest) -> ProductionResponse:
         """
-        Creates a new production record.
+        Creates a new production record. Leverages the base class execute method.
+        Assumes no pre-existence check is needed here based on current file content.
+        If a pre-existence check (e.g., by well_code and reference_date) was required, 
+        this method would need to implement it.
         """
-        production_entity = Production(**production_request_dto.model_dump())
-        
-        created_production_entity = self.production_repository.add(production_entity)
-        
-        return ProductionResponse(**created_production_entity.model_dump())
+        # ProductionResponse has from_entity from previous subtask.
+        return super().execute(production_request_dto)

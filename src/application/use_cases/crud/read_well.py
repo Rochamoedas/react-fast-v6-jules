@@ -1,24 +1,24 @@
 from typing import Optional
 from src.application.dtos.response.well_response import WellResponse
 from src.domain.interfaces.repository import IWellRepository
+from src.domain.entities.well import Well # Ensure Well is imported
+from .base import ReadUseCase # Import the base class
 
-class ReadWellUseCase:
+class ReadWellUseCase(ReadUseCase[Well, WellResponse, IWellRepository, str]):
     def __init__(self, well_repository: IWellRepository):
-        self.well_repository = well_repository
+        # Pass response_dto_type to the base class constructor
+        super().__init__(well_repository, WellResponse)
 
     def execute(self, well_code: str) -> Optional[WellResponse]:
         """
-        Retrieves a well by its code.
+        Retrieves a well by its code. This overrides the base execute
+        to use get_by_well_code.
         """
-        well = self.well_repository.get_by_well_code(well_code)
-        if well:
-            return WellResponse(**well.model_dump())
+        well_entity = self.repository.get_by_well_code(well_code)
+        
+        if well_entity:
+            # Use self.response_dto_type from base class (which has from_entity)
+            return self.response_dto_type.from_entity(well_entity)
         return None
 
-# Note: get_all_wells functionality might be part of a different use case
-# (e.g., ListWellsUseCase) or added here later if requirements expand.
-# For now, adhering to the single entity read pattern for ReadWellUseCase.
-#
-#    def get_all_wells(self) -> List[WellResponse]:
-#        wells = self.well_repository.list()
-#        return [WellResponse(**well.model_dump()) for well in wells]
+# Note: get_all_wells functionality is handled by ListWellUseCase.

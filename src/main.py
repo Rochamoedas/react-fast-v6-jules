@@ -26,7 +26,8 @@ from src.domain.interfaces.repository import (
 )
 from src.domain.interfaces.external_api import IExternalAPI
 from src.domain.aggregates.financials import Financials
-from src.domain.services.data_service import DataService # Added DataService
+from src.domain.services.data_service import DataService 
+from src.domain.services.dca_service import DCAService # Added DCAService
 
 # Application DTOs
 from src.application.dtos.request.well_request import WellRequest
@@ -34,11 +35,14 @@ from src.application.dtos.response.well_response import WellResponse
 from src.application.dtos.request.field_request import FieldRequest
 from src.application.dtos.response.field_response import FieldResponse
 from src.application.dtos.request.production_request import ProductionRequest
-from src.application.dtos.response.production_response import ProductionResponse # Ensure this covers analytical needs
+from src.application.dtos.response.production_response import ProductionResponse 
 from src.application.dtos.request.oil_price_request import OilPriceRequest
 from src.application.dtos.response.oil_price_response import OilPriceResponse
 from src.application.dtos.request.exchange_rate_request import ExchangeRateRequest
 from src.application.dtos.response.exchange_rate_response import ExchangeRateResponse
+from src.application.dtos.request.dca_request import DCARequest # Added DCARequest
+from src.application.dtos.response.dca_response import DCAResponse # Added DCAResponse
+
 
 # Application Use Cases - CRUD
 from src.application.use_cases.crud.create_well import CreateWellUseCase
@@ -61,20 +65,30 @@ from src.application.use_cases.crud.create_exchange_rate import CreateExchangeRa
 from src.application.use_cases.crud.read_exchange_rate import ReadExchangeRateUseCase
 from src.application.use_cases.crud.update_exchange_rate import UpdateExchangeRateUseCase
 from src.application.use_cases.crud.delete_exchange_rate import DeleteExchangeRateUseCase
+from src.application.use_cases.crud.list_well import ListWellUseCase
+from src.application.use_cases.crud.list_field import ListFieldUseCase
+from src.application.use_cases.crud.list_production import ListProductionUseCase
+from src.application.use_cases.crud.list_oil_price import ListOilPriceUseCase
+from src.application.use_cases.crud.list_exchange_rate import ListExchangeRateUseCase
 
 # Application Use Cases - Analytical
 from src.application.use_cases.analytical.filter_production_use_case import FilterProductionUseCase
 from src.application.use_cases.analytical.aggregate_production_use_case import AggregateProductionUseCase
 from src.application.use_cases.analytical.join_tables_use_case import JoinTablesUseCase
+from src.application.use_cases.analytical.decline_curve_analysis_use_case import DeclineCurveAnalysisUseCase # Added DCA Use Case
+from src.routers.dependencies import get_db_adapter, get_api_adapter # Moved global providers
+from src.routers.well_router import well_router # Import the new well_router
+from src.routers.field_router import field_router # Import the new field_router
+from src.routers.production_router import production_router # Import the new production_router
+from src.routers.oil_price_router import oil_price_router # Import the new oil_price_router
+from src.routers.exchange_rate_router import exchange_rate_router # Import the new exchange_rate_router
+from src.routers.analysis_router import analysis_router # Import the new analysis_router
 
 # Get a logger for this module
 logger = logging.getLogger(__name__)
 
 # --- Pydantic Request Models for Analytical Use Cases ---
-class AggregationRequest(BaseModel):
-    group_by_fields: List[str] = Field(..., example=["well_code"])
-    aggregation_functions: Dict[str, str] = Field(..., example={"oil_prod": "sum", "gas_prod": "mean"})
-
+# AggregationRequest moved to src.application.dtos.request.analytical_requests
 
 # --- FastAPI Application Setup ---
 app = FastAPI(
@@ -150,290 +164,40 @@ async def shutdown_event():
     logger.info("Database connection closed.")
 
 # --- Dependency Injection Providers --- 
-def get_db_adapter() -> DuckDBAdapter:
-    return db_adapter
-
-def get_api_adapter() -> IExternalAPI: 
-    return api_adapter
+# get_db_adapter and get_api_adapter are now in src.routers.dependencies
 
 # Repositories
-def get_well_repository(adapter: DuckDBAdapter = Depends(get_db_adapter)) -> IWellRepository:
-    return adapter.get_well_repository()
-
-def get_field_repository(adapter: DuckDBAdapter = Depends(get_db_adapter)) -> IFieldRepository:
-    return adapter.get_field_repository()
-
-def get_production_repository(adapter: DuckDBAdapter = Depends(get_db_adapter)) -> IProductionRepository:
-    return adapter.get_production_repository()
-
-def get_oil_price_repository(adapter: DuckDBAdapter = Depends(get_db_adapter)) -> IOilPriceRepository:
-    return adapter.get_oil_price_repository()
-
-def get_exchange_rate_repository(adapter: DuckDBAdapter = Depends(get_db_adapter)) -> IExchangeRateRepository:
-    return adapter.get_exchange_rate_repository()
+# get_well_repository moved to src.routers.well_router
+# get_field_repository moved to src.routers.field_router
+# get_production_repository moved to src.routers.production_router
+# get_oil_price_repository moved to src.routers.oil_price_router
+# get_exchange_rate_repository moved to src.routers.exchange_rate_router
 
 # Use Cases - CRUD (abbreviated for focus)
-def get_create_well_use_case(repo: IWellRepository = Depends(get_well_repository)) -> CreateWellUseCase:
-    return CreateWellUseCase(repo)
-# ... other CRUD use case providers ...
-def get_read_well_use_case(repo: IWellRepository = Depends(get_well_repository)) -> ReadWellUseCase:
-    return ReadWellUseCase(repo)
-def get_update_well_use_case(repo: IWellRepository = Depends(get_well_repository)) -> UpdateWellUseCase:
-    return UpdateWellUseCase(repo)
-def get_delete_well_use_case(repo: IWellRepository = Depends(get_well_repository)) -> DeleteWellUseCase:
-    return DeleteWellUseCase(repo)
-def get_create_field_use_case(repo: IFieldRepository = Depends(get_field_repository)) -> CreateFieldUseCase:
-    return CreateFieldUseCase(repo)
-def get_read_field_use_case(repo: IFieldRepository = Depends(get_field_repository)) -> ReadFieldUseCase:
-    return ReadFieldUseCase(repo)
-def get_update_field_use_case(repo: IFieldRepository = Depends(get_field_repository)) -> UpdateFieldUseCase:
-    return UpdateFieldUseCase(repo)
-def get_delete_field_use_case(repo: IFieldRepository = Depends(get_field_repository)) -> DeleteFieldUseCase:
-    return DeleteFieldUseCase(repo)
-def get_create_production_use_case(repo: IProductionRepository = Depends(get_production_repository)) -> CreateProductionUseCase:
-    return CreateProductionUseCase(repo)
-def get_read_production_use_case(repo: IProductionRepository = Depends(get_production_repository)) -> ReadProductionUseCase:
-    return ReadProductionUseCase(repo)
-def get_update_production_use_case(repo: IProductionRepository = Depends(get_production_repository)) -> UpdateProductionUseCase:
-    return UpdateProductionUseCase(repo)
-def get_delete_production_use_case(repo: IProductionRepository = Depends(get_production_repository)) -> DeleteProductionUseCase:
-    return DeleteProductionUseCase(repo)
-def get_create_oil_price_use_case(repo: IOilPriceRepository = Depends(get_oil_price_repository)) -> CreateOilPriceUseCase:
-    return CreateOilPriceUseCase(repo)
-def get_read_oil_price_use_case(repo: IOilPriceRepository = Depends(get_oil_price_repository)) -> ReadOilPriceUseCase:
-    return ReadOilPriceUseCase(repo)
-def get_update_oil_price_use_case(repo: IOilPriceRepository = Depends(get_oil_price_repository)) -> UpdateOilPriceUseCase:
-    return UpdateOilPriceUseCase(repo)
-def get_delete_oil_price_use_case(repo: IOilPriceRepository = Depends(get_oil_price_repository)) -> DeleteOilPriceUseCase:
-    return DeleteOilPriceUseCase(repo)
-def get_create_exchange_rate_use_case(repo: IExchangeRateRepository = Depends(get_exchange_rate_repository)) -> CreateExchangeRateUseCase:
-    return CreateExchangeRateUseCase(repo)
-def get_read_exchange_rate_use_case(repo: IExchangeRateRepository = Depends(get_exchange_rate_repository)) -> ReadExchangeRateUseCase:
-    return ReadExchangeRateUseCase(repo)
-def get_update_exchange_rate_use_case(repo: IExchangeRateRepository = Depends(get_exchange_rate_repository)) -> UpdateExchangeRateUseCase:
-    return UpdateExchangeRateUseCase(repo)
-def get_delete_exchange_rate_use_case(repo: IExchangeRateRepository = Depends(get_exchange_rate_repository)) -> DeleteExchangeRateUseCase:
-    return DeleteExchangeRateUseCase(repo)
+# Well use case providers moved to src.routers.well_router
+# Field use case providers moved to src.routers.field_router
+# Production use case providers moved to src.routers.production_router
+# Oil Price use case providers moved to src.routers.oil_price_router
+# Exchange Rate use case providers moved to src.routers.exchange_rate_router
+
+# List Use Cases
+# get_list_well_use_case moved to src.routers.well_router
+# get_list_field_use_case moved to src.routers.field_router
+# get_list_production_use_case moved to src.routers.production_router
+# get_list_oil_price_use_case moved to src.routers.oil_price_router
+# get_list_exchange_rate_use_case moved to src.routers.exchange_rate_router
 
 # Use Cases - Analytical
-def get_filter_production_use_case(production_repo: IProductionRepository = Depends(get_production_repository)) -> FilterProductionUseCase:
-    return FilterProductionUseCase(data_service=DataService(), production_repo=production_repo)
-
-def get_aggregate_production_use_case(production_repo: IProductionRepository = Depends(get_production_repository)) -> AggregateProductionUseCase:
-    # Note: AggregateProductionUseCase expects (production_repo, data_service) in its constructor
-    return AggregateProductionUseCase(production_repo=production_repo, data_service=DataService())
-
-
-def get_join_tables_use_case(
-    production_repo: IProductionRepository = Depends(get_production_repository),
-    oil_price_repo: IOilPriceRepository = Depends(get_oil_price_repository),
-    exchange_rate_repo: IExchangeRateRepository = Depends(get_exchange_rate_repository)
-) -> JoinTablesUseCase:
-    # Constructor order: production_repo, oil_price_repo, exchange_rate_repo, data_service
-    return JoinTablesUseCase(
-        production_repo=production_repo,
-        oil_price_repo=oil_price_repo,
-        exchange_rate_repo=exchange_rate_repo,
-        data_service=DataService()
-    )
+# All analytical use case providers and get_dca_service moved to src.routers.analysis_router
 
 # --- API Routers ---
 # CRUD Routers (existing)
-well_router = APIRouter(prefix="/wells", tags=["Wells"])
-@well_router.post("/", response_model=WellResponse, status_code=status.HTTP_201_CREATED)
-def create_well(well_request: WellRequest, use_case: CreateWellUseCase = Depends(get_create_well_use_case)):
-    try: return use_case.execute(well_request)
-    except Exception as e: raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-@well_router.get("/{well_code}", response_model=WellResponse)
-def read_well(well_code: str, use_case: ReadWellUseCase = Depends(get_read_well_use_case)):
-    result = use_case.execute(well_code)
-    if not result: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Well not found")
-    return result
-@well_router.get("/", response_model=List[WellResponse])
-def list_wells(field_code: Optional[str] = Query(None), well_name: Optional[str] = Query(None), repo: IWellRepository = Depends(get_well_repository)):
-    filters: Dict[str, Any] = {}
-    if field_code: filters["field_code"] = field_code
-    if well_name: filters["well_name"] = well_name
-    wells = repo.list(filters=filters if filters else None)
-    return [WellResponse(**well.model_dump()) for well in wells]
-@well_router.put("/{well_code}", response_model=WellResponse)
-def update_well(well_code: str, well_request: WellRequest, use_case: UpdateWellUseCase = Depends(get_update_well_use_case)):
-    if hasattr(well_request, 'well_code') and well_request.well_code != well_code: well_request.well_code = well_code 
-    updated_well = use_case.execute(well_code=well_code, well_request_dto=well_request)
-    if not updated_well: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Well not found")
-    return updated_well
-@well_router.delete("/{well_code}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_well(well_code: str, use_case: DeleteWellUseCase = Depends(get_delete_well_use_case), read_use_case: ReadWellUseCase = Depends(get_read_well_use_case)):
-    if not read_use_case.execute(well_code): raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Well not found")
-    try: use_case.execute(well_code)
-    except Exception as e: raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error deleting well: {e}")
-
-field_router = APIRouter(prefix="/fields", tags=["Fields"])
-# ... (Field CRUD endpoints remain unchanged, abbreviated for focus) ...
-@field_router.post("/", response_model=FieldResponse, status_code=status.HTTP_201_CREATED)
-def create_field(field_request: FieldRequest, use_case: CreateFieldUseCase = Depends(get_create_field_use_case)):
-    try: return use_case.execute(field_request)
-    except Exception as e: raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-@field_router.get("/{field_code}", response_model=FieldResponse)
-def read_field(field_code: str, use_case: ReadFieldUseCase = Depends(get_read_field_use_case)):
-    result = use_case.execute(field_code)
-    if not result: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Field not found")
-    return result
-@field_router.get("/", response_model=List[FieldResponse])
-def list_fields(field_name: Optional[str] = Query(None), repo: IFieldRepository = Depends(get_field_repository)):
-    filters: Dict[str, Any] = {}
-    if field_name: filters["field_name"] = field_name
-    fields = repo.list(filters=filters if filters else None)
-    return [FieldResponse(**field.model_dump()) for field in fields]
-@field_router.put("/{field_code}", response_model=FieldResponse)
-def update_field(field_code: str, field_request: FieldRequest, use_case: UpdateFieldUseCase = Depends(get_update_field_use_case)):
-    if hasattr(field_request, 'field_code') and field_request.field_code != field_code: field_request.field_code = field_code
-    updated_field = use_case.execute(field_code=field_code, field_request_dto=field_request)
-    if not updated_field: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Field not found")
-    return updated_field
-@field_router.delete("/{field_code}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_field(field_code: str, use_case: DeleteFieldUseCase = Depends(get_delete_field_use_case), read_use_case: ReadFieldUseCase = Depends(get_read_field_use_case)):
-    if not read_use_case.execute(field_code): raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Field not found")
-    try: use_case.execute(field_code)
-    except Exception as e: raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error deleting field: {e}")
-
-production_router = APIRouter(prefix="/production", tags=["Production Data"])
-# ... (Production CRUD endpoints remain unchanged, abbreviated for focus) ...
-@production_router.post("/", response_model=ProductionResponse, status_code=status.HTTP_201_CREATED)
-def create_production_entry(production_request: ProductionRequest, use_case: CreateProductionUseCase = Depends(get_create_production_use_case)):
-    try: return use_case.execute(production_request)
-    except Exception as e: raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-@production_router.get("/{well_code}/{reference_date}", response_model=ProductionResponse)
-def read_production_entry(well_code: str, reference_date: date, repo: IProductionRepository = Depends(get_production_repository)):
-    result = repo.get_by_well_code_and_date(well_code, reference_date)
-    if not result: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Production entry not found")
-    return ProductionResponse(**result.model_dump())
-@production_router.get("/", response_model=List[ProductionResponse])
-def list_production_entries(well_code: Optional[str] = Query(None), start_date: Optional[date] = Query(None), end_date: Optional[date] = Query(None), repo: IProductionRepository = Depends(get_production_repository)):
-    if start_date and end_date:
-        if well_code:
-             filters = {"well_code": well_code, "start_date": start_date, "end_date": end_date} 
-             entries = repo.list(filters=filters) 
-        else: entries = repo.find_by_date_range(start_date, end_date)
-    elif well_code: entries = repo.find_by_well_code(well_code)
-    else: entries = repo.list() 
-    return [ProductionResponse(**entry.model_dump()) for entry in entries]
-@production_router.put("/{well_code}/{reference_date}", response_model=ProductionResponse)
-def update_production_entry(well_code: str, reference_date: date, production_request: ProductionRequest, repo: IProductionRepository = Depends(get_production_repository)):
-    key_values = {"well_code": well_code, "reference_date": reference_date}
-    existing = repo.get_by_composite_key(key_values)
-    if not existing: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Production entry not found")
-    from src.domain.entities.production import Production 
-    entity_to_update = Production(**production_request.model_dump())
-    updated_entity = repo.update_by_composite_key(entity_to_update, key_values)
-    return ProductionResponse(**updated_entity.model_dump())
-@production_router.delete("/{well_code}/{reference_date}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_production_entry(well_code: str, reference_date: date, repo: IProductionRepository = Depends(get_production_repository)):
-    key_values = {"well_code": well_code, "reference_date": reference_date}
-    existing = repo.get_by_composite_key(key_values)
-    if not existing: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Production entry not found")
-    repo.delete_by_composite_key(key_values)
-
-oil_price_router = APIRouter(prefix="/oil-prices", tags=["Oil Prices"])
-# ... (Oil Price CRUD endpoints remain unchanged, abbreviated for focus) ...
-@oil_price_router.post("/", response_model=OilPriceResponse, status_code=status.HTTP_201_CREATED)
-def create_oil_price_entry(oil_price_request: OilPriceRequest, use_case: CreateOilPriceUseCase = Depends(get_create_oil_price_use_case)):
-    try: return use_case.execute(oil_price_request)
-    except Exception as e: raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-@oil_price_router.get("/{field_code}/{reference_date}", response_model=OilPriceResponse)
-def read_oil_price_entry(field_code: str, reference_date: date, repo: IOilPriceRepository = Depends(get_oil_price_repository)):
-    result = repo.get_by_field_code_and_date(field_code, reference_date)
-    if not result: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oil price entry not found")
-    return OilPriceResponse(**result.model_dump())
-@oil_price_router.get("/", response_model=List[OilPriceResponse])
-def list_oil_price_entries(field_code: Optional[str] = Query(None), start_date: Optional[date] = Query(None), end_date: Optional[date] = Query(None), repo: IOilPriceRepository = Depends(get_oil_price_repository)):
-    if start_date and end_date:
-        if field_code:
-             filters = {"field_code": field_code, "start_date": start_date, "end_date": end_date}
-             entries = repo.list(filters=filters) 
-        else: entries = repo.find_by_date_range(start_date, end_date)
-    elif field_code: entries = repo.find_by_field_code(field_code)
-    else: entries = repo.list()
-    return [OilPriceResponse(**entry.model_dump()) for entry in entries]
-@oil_price_router.put("/{field_code}/{reference_date}", response_model=OilPriceResponse)
-def update_oil_price_entry(field_code: str, reference_date: date, oil_price_request: OilPriceRequest, repo: IOilPriceRepository = Depends(get_oil_price_repository)):
-    key_values = {"field_code": field_code, "reference_date": reference_date}
-    existing = repo.get_by_composite_key(key_values)
-    if not existing: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oil price entry not found")
-    from src.domain.entities.oil_price import OilPrice
-    entity_to_update = OilPrice(**oil_price_request.model_dump())
-    updated_entity = repo.update_by_composite_key(entity_to_update, key_values)
-    return OilPriceResponse(**updated_entity.model_dump())
-@oil_price_router.delete("/{field_code}/{reference_date}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_oil_price_entry(field_code: str, reference_date: date, repo: IOilPriceRepository = Depends(get_oil_price_repository)):
-    key_values = {"field_code": field_code, "reference_date": reference_date}
-    if not repo.get_by_composite_key(key_values): raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oil price entry not found")
-    repo.delete_by_composite_key(key_values)
-
-exchange_rate_router = APIRouter(prefix="/exchange-rates", tags=["Exchange Rates"])
-# ... (Exchange Rate CRUD endpoints remain unchanged, abbreviated for focus) ...
-@exchange_rate_router.post("/", response_model=ExchangeRateResponse, status_code=status.HTTP_201_CREATED)
-def create_exchange_rate_entry(exchange_rate_request: ExchangeRateRequest, use_case: CreateExchangeRateUseCase = Depends(get_create_exchange_rate_use_case)):
-    try: return use_case.execute(exchange_rate_request)
-    except Exception as e: raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-@exchange_rate_router.get("/{reference_date}", response_model=ExchangeRateResponse)
-def read_exchange_rate_entry(reference_date: date, repo: IExchangeRateRepository = Depends(get_exchange_rate_repository)):
-    result = repo.get_by_date(reference_date)
-    if not result: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exchange rate entry not found")
-    return ExchangeRateResponse(**result.model_dump())
-@exchange_rate_router.get("/", response_model=List[ExchangeRateResponse])
-def list_exchange_rate_entries(start_date: Optional[date] = Query(None), end_date: Optional[date] = Query(None), repo: IExchangeRateRepository = Depends(get_exchange_rate_repository)):
-    if start_date and end_date: entries = repo.find_by_date_range(start_date, end_date)
-    else: entries = repo.list()
-    return [ExchangeRateResponse(**entry.model_dump()) for entry in entries]
-@exchange_rate_router.put("/{reference_date}", response_model=ExchangeRateResponse)
-def update_exchange_rate_entry(reference_date: date, exchange_rate_request: ExchangeRateRequest, use_case: UpdateExchangeRateUseCase = Depends(get_update_exchange_rate_use_case)):
-    updated_entry = use_case.execute(rate_id=reference_date, exchange_rate_request_dto=exchange_rate_request)
-    if not updated_entry: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exchange rate entry not found")
-    return updated_entry
-@exchange_rate_router.delete("/{reference_date}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_exchange_rate_entry(reference_date: date, use_case: DeleteExchangeRateUseCase = Depends(get_delete_exchange_rate_use_case), read_use_case: ReadExchangeRateUseCase = Depends(get_read_exchange_rate_use_case)):
-    if not read_use_case.execute(rate_id=reference_date): raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exchange rate not found")
-    use_case.execute(rate_id=reference_date)
-
-# Analytical Router
-analysis_router = APIRouter(prefix="/analysis", tags=["Analysis"])
-
-@analysis_router.post("/production/filter", response_model=List[ProductionResponse])
-def filter_production_data(
-    criteria: Dict[str, Any], 
-    use_case: FilterProductionUseCase = Depends(get_filter_production_use_case)
-):
-    try:
-        return use_case.execute(criteria=criteria)
-    except Exception as e:
-        logger.error(f"Error in filter_production_data endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-@analysis_router.post("/production/aggregate", response_model=List[Dict[str, Any]])
-def aggregate_production_data(
-    request: AggregationRequest, 
-    use_case: AggregateProductionUseCase = Depends(get_aggregate_production_use_case)
-):
-    try:
-        return use_case.execute(
-            group_by_fields=request.group_by_fields, 
-            aggregation_functions=request.aggregation_functions
-        )
-    except Exception as e:
-        logger.error(f"Error in aggregate_production_data endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-@analysis_router.get("/data/joined", response_model=List[Dict[str, Any]])
-def get_joined_data(
-    use_case: JoinTablesUseCase = Depends(get_join_tables_use_case)
-):
-    try:
-        return use_case.execute()
-    except Exception as e:
-        logger.error(f"Error in get_joined_data endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
+# well_router and its endpoints moved to src.routers.well_router
+# field_router and its endpoints moved to src.routers.field_router
+# production_router and its endpoints moved to src.routers.production_router
+# oil_price_router and its endpoints moved to src.routers.oil_price_router
+# exchange_rate_router and its endpoints moved to src.routers.exchange_rate_router
+# analysis_router and its endpoints moved to src.routers.analysis_router
 
 # Include Routers in the main application
 app.include_router(well_router)

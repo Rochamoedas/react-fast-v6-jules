@@ -257,6 +257,25 @@ class ProductionDuckDBRepository(DuckDBGenericRepository[Production], IProductio
             logger.error(f"Error in find_by_date_range for Production: {e}", exc_info=True)
             raise DatabaseError(message="Error in find_by_date_range for Production", detail=str(e)) from e
 
+        def find_by_well_code_and_date_range(self, well_code: str, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[Production]:
+            params: List[Any] = [well_code]
+            query = f"SELECT * FROM {self.table_name} WHERE well_code = ?"
+            if start_date:
+                query += " AND reference_date >= ?"
+                params.append(start_date)
+            if end_date:
+                query += " AND reference_date <= ?"
+                params.append(end_date)
+            query += " ORDER BY reference_date ASC"
+            
+            logger.debug(f"Executing SQL: {query} with params: {params}")
+            try:
+                results = self.connection.execute(query, params).fetchall()
+                column_names = [desc[0] for desc in self.connection.description or []]
+                return [self.model(**dict(zip(column_names, row))) for row in results]
+            except duckdb.Error as e:
+                logger.error(f"Error in find_by_well_code_and_date_range for Production: {e}", exc_info=True)
+                raise DatabaseError(message="Error in find_by_well_code_and_date_range for Production", detail=str(e)) from e
 
 class OilPriceDuckDBRepository(DuckDBGenericRepository[OilPrice], IOilPriceRepository):
     def __init__(self, connection: duckdb.DuckDBPyConnection, table_name: str = "oil_prices"):

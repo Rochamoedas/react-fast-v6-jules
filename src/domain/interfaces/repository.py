@@ -104,4 +104,7 @@ class IExchangeRateRepository(IRepository[ExchangeRate]):
 
     @abstractmethod
     def find_by_date_range(self, start_date: date, end_date: date) -> List[ExchangeRate]:
+
+    @abstractmethod
+    def find_by_well_code_and_date_range(self, well_code: str, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[Production]: ...
         pass
