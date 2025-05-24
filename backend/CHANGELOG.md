@@ -63,3 +63,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed `STUDYME.md` in favor of new documentation structure
 
+## [1.0.2] - 2025-05-19
+
+### Added
+- New endpoint /authenticate
+
+## [1.0.3] - 2025-05-20
+
+### Refactored
+- Codebase to have more parametric design and follow hexagonal architecture
+
+### Modified
+- **.gitignore**: Updated to include new untracked files and directories.
+- **backend/app/application/use_cases/fetch_odata_data.py**: Enhanced to handle new data fetching logic.
+- **backend/app/infrastructure/di/container.py**: Updated dependency injection configuration.
+- **backend/app/presentation/api/rest_controllers/odata_controllers.py**: Updated to integrate new data fetching logic.
+
+### Removed
+- **backend/app/application/use_cases/fetch_google_data.py**: Removed as part of refactoring.
+- **backend/app/application/use_cases/fetch_json_data.py**: Removed as part of refactoring.
+
+### Added
+- **backend/app/domain/interfaces/o_data_repository.py**: Added new interface for data repository.
+- **backend/app/infrastructure/database/**: Added new directory for database-related files.

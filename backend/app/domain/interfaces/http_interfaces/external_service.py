@@ -6,6 +6,6 @@ class ExternalServiceInterface(ABC):
     """Interface for external service communication."""
     
     @abstractmethod
-    async def fetch_data(self, url: str) -> Dict[str, Any]:
+    async def fetch_data(self, endpoint: str = None) -> Dict[str, Any]:
         """Fetch data from an external service."""
         pass

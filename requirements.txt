@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic
+duckdb
+apscheduler
+requests
+python-dotenv
+polars
+pyarrow
