@@ -1,16 +1,24 @@
 # src/application/use_cases/crud/delete_exchange_rate.py
-from typing import Any
+from datetime import date # Import date
 from src.domain.interfaces.repository import IExchangeRateRepository
+from src.core.exceptions import NotFoundError # Assuming NotFoundError is in core.exceptions
+from .base import DeleteUseCase # Import the base class
 
-class DeleteExchangeRateUseCase:
+class DeleteExchangeRateUseCase(DeleteUseCase[IExchangeRateRepository, date]):
     def __init__(self, exchange_rate_repository: IExchangeRateRepository):
-        self.exchange_rate_repository = exchange_rate_repository
+        super().__init__(exchange_rate_repository)
 
-    def execute(self, rate_id: Any) -> None:
+    def execute(self, rate_id: date) -> None:
         """
-        Deletes an exchange rate record by its ID.
+        Deletes an exchange rate record by its ID (reference_date).
+        Overrides base to include pre-existence check.
+        Raises NotFoundError if the record does not exist.
         """
-        # Assumes IExchangeRateRepository has a delete method that accepts rate_id.
-        # If ExchangeRateDuckDBRepository.delete is inherited from DuckDBGenericRepository,
-        # it needs to be implemented to call super().delete(rate_id, self.pk_name).
-        self.exchange_rate_repository.delete(rate_id)
+        # Check if the entity exists before attempting deletion
+        # For ExchangeRate, rate_id is the reference_date which is the ID.
+        existing_entity = self.repository.get_by_id(rate_id)
+        if not existing_entity:
+            raise NotFoundError(f"Exchange rate with ID {rate_id} not found.")
+            
+        # Call super().execute() which calls self.repository.delete(entity_id)
+        super().execute(rate_id)

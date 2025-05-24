@@ -1,20 +1,18 @@
 # src/application/use_cases/crud/read_exchange_rate.py
-from typing import Optional, Any
+from typing import Optional 
+from datetime import date 
 from src.application.dtos.response.exchange_rate_response import ExchangeRateResponse
 from src.domain.interfaces.repository import IExchangeRateRepository
+from src.domain.entities.exchange_rate import ExchangeRate 
+from .base import ReadUseCase 
 
-class ReadExchangeRateUseCase:
+class ReadExchangeRateUseCase(ReadUseCase[ExchangeRate, ExchangeRateResponse, IExchangeRateRepository, date]):
     def __init__(self, exchange_rate_repository: IExchangeRateRepository):
-        self.exchange_rate_repository = exchange_rate_repository
+        super().__init__(exchange_rate_repository, ExchangeRateResponse)
 
-    def execute(self, rate_id: Any) -> Optional[ExchangeRateResponse]:
+    def execute(self, rate_id: date) -> Optional[ExchangeRateResponse]:
         """
-        Retrieves an exchange rate record by its ID.
+        Retrieves an exchange rate record by its ID (reference_date).
+        Leverages the base class execute method.
         """
-        # Assumes IExchangeRateRepository has a method get_by_id or similar.
-        # ExchangeRateDuckDBRepository defines get_by_id(self, rate_id: Any)
-        exchange_rate_entity = self.exchange_rate_repository.get_by_id(rate_id)
-        
-        if exchange_rate_entity:
-            return ExchangeRateResponse(**exchange_rate_entity.model_dump())
-        return None
+        return super().execute(rate_id)
