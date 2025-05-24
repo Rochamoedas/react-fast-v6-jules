@@ -1,2 +1,9 @@
-# This is the requirements.txt file.
-# It is initially empty.
+fastapi
+uvicorn[standard]
+pydantic
+duckdb
+apscheduler
+requests
+python-dotenv
+polars
+pyarrow

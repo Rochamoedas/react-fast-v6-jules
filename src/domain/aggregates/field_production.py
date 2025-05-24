@@ -1,27 +1,35 @@
+# src/domain/aggregates/field_production.py
 from typing import List
-from src.domain.entities.field import Field
+from pydantic import BaseModel
 from src.domain.entities.production import Production
-# Placeholder for potential value objects if needed for aggregation results
-# from src.domain.value_objects.production_value import ProductionValue 
 
-class FieldProduction:
-    def __init__(self, field: Field, productions: List[Production]):
-        self.field = field
-        self.productions = productions
-        # self.total_oil_kbd: float = 0.0 # Example aggregated value
-        # self.total_gas_kbd: float = 0.0 # Example aggregated value
+class FieldProduction(BaseModel):
+    """
+    Represents the aggregated production data for a specific field.
+    """
+    field_code: str
+    productions: List[Production]
 
-    def aggregate_production_by_month(self):
-        # TODO: Implement logic to aggregate production data.
-        # This would sum oil_prod, gas_prod for all productions,
-        # potentially grouping by month and converting units (e.g., to KBD).
-        # For now, this is a placeholder.
-        pass
+    def calculate_total_oil_production_kbd(self) -> float:
+        """
+        Calculates the total oil production for the field in thousand barrels per day (KBD).
+        Assumes individual production records' oil_prod is in barrels per month.
+        Uses an average of 30 days per month for conversion.
+        """
+        if not self.productions:
+            return 0.0
 
-    def get_total_oil_production_kbd(self) -> float:
-        # Placeholder logic
-        # Actual logic would sum and convert units
-        total_oil = sum(p.oil_prod for p in self.productions)
-        # Assuming productions are daily and we need to convert to KBD (per day)
-        # This is a simplification; actual KBD might involve monthly totals / days in month
-        return total_oil # Simple sum for now, unit conversion logic to be added
+        total_monthly_oil_production_bbl = sum(p.oil_prod for p in self.productions)
+        
+        # Convert barrels per month to barrels per day (assuming 30 days per month)
+        total_daily_oil_production_bbl = total_monthly_oil_production_bbl / 30.0
+        
+        # Convert barrels per day to thousand barrels per day (KBD)
+        total_daily_oil_production_kbd = total_daily_oil_production_bbl / 1000.0
+        
+        return total_daily_oil_production_kbd
+
+    class Config:
+        # Pydantic configuration to allow arbitrary types if needed later,
+        # though not strictly necessary for current attributes.
+        arbitrary_types_allowed = True

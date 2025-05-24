@@ -1,73 +1,75 @@
+# src/domain/services/data_service.py
 from typing import List, Dict, Any
+from src.domain.entities.production import Production
+from src.domain.entities.oil_price import OilPrice
+from src.domain.entities.exchange_rate import ExchangeRate
 
 class DataService:
-    def __init__(self):
-        # Potential dependencies like a repository could be injected here later
+    """
+    A service class for performing data operations like filtering, aggregation, and joining.
+    """
+
+    def filter_production(self, data: List[Production], criteria: Dict[str, Any]) -> List[Production]:
+        """
+        Filters production data based on given criteria.
+        (Placeholder implementation)
+        """
+        # Example: criteria could be {"well_code": "XYZ", "min_oil_prod": 100}
+        # Actual filtering logic will be implemented later.
         pass
 
-    def filter_data(self, data: List[Dict[str, Any]], criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
-        '''
-        Filters a list of dictionaries based on given criteria.
-        This is a placeholder and will be adapted to work with Polars DataFrames
-        or specific domain entities.
-        '''
-        # TODO: Implement actual filtering logic, possibly using Polars
-        if not criteria:
-            return data
-        
-        filtered_list = []
-        for item in data:
-            match = True
-            for key, value in criteria.items():
-                if item.get(key) != value:
-                    match = False
-                    break
-            if match:
-                filtered_list.append(item)
-        return filtered_list
+    def aggregate_production(
+        self, 
+        data: List[Production], 
+        group_by_fields: List[str], 
+        aggregation_functions: Dict[str, str]
+    ) -> List[Dict[str, Any]]:
+        """
+        Aggregates production data by specified fields and functions.
+        (Placeholder implementation)
+        """
+        # Example: group_by_fields=["well_code"], aggregation_functions={"oil_prod": "sum", "gas_prod": "avg"}
+        # Actual aggregation logic will be implemented later.
+        pass
 
-    def join_data(self, 
-                  dataset1: List[Dict[str, Any]], 
-                  dataset2: List[Dict[str, Any]], 
-                  key1: str, 
-                  key2: str,
-                  join_type: str = 'inner') -> List[Dict[str, Any]]:
-        '''
-        Joins two lists of dictionaries based on a common key.
-        This is a placeholder and will be adapted to work with Polars DataFrames.
-        '''
-        # TODO: Implement actual join logic, definitely using Polars for efficiency
-        # This is a very naive placeholder join
-        joined_result = []
-        for item1 in dataset1:
-            for item2 in dataset2:
-                if item1.get(key1) == item2.get(key2):
-                    # Simple merge, conflicts in other keys not handled
-                    joined_item = {**item1, **item2} 
-                    joined_result.append(joined_item)
-        return joined_result
+    def join_data(
+        self, 
+        production_data: List[Production], 
+        price_data: List[OilPrice], 
+        exchange_data: List[ExchangeRate]
+    ) -> List[Dict[str, Any]]:
+        """
+        Joins production, oil price, and exchange rate data based on common keys (e.g., date).
+        (Placeholder implementation)
+        """
+        # Actual joining logic (e.g., based on reference_date) will be implemented later.
+        pass
 
-    def aggregate_data(self, 
-                       data: List[Dict[str, Any]], 
-                       group_by_key: str, 
-                       aggregation_specs: Dict[str, str]) -> List[Dict[str, Any]]:
-        '''
-        Aggregates data from a list of dictionaries.
-        'aggregation_specs' could be like {'value_field': 'sum', 'another_field': 'avg'}
-        This is a placeholder and will be adapted to work with Polars DataFrames.
-        '''
-        # TODO: Implement actual aggregation logic using Polars
-        # This is a very naive placeholder
-        if not data or not group_by_key or not aggregation_specs:
-            return []
+# Example usage (for illustration, not part of the class itself):
+# if __name__ == '__main__':
+#     from datetime import date
+#     # Sample data
+#     prod_data = [
+#         Production(reference_date=date(2023, 1, 1), oil_prod=1000, gas_prod=500, water_prod=200, well_code="W1"),
+#         Production(reference_date=date(2023, 1, 1), oil_prod=1500, gas_prod=600, water_prod=250, well_code="W2"),
+#     ]
+#     price_data = [
+#         OilPrice(reference_date=date(2023, 1, 1), field_name="FieldA", field_code="F1", price=70.5),
+#     ]
+#     exchange_data = [
+#         ExchangeRate(reference_date=date(2023, 1, 1), rate=5.25),
+#     ]
 
-        # Example: Just counts occurrences for simplicity
-        grouped_data = {}
-        for item in data:
-            key = item.get(group_by_key)
-            if key not in grouped_data:
-                grouped_data[key] = 0
-            grouped_data[key] += 1 
-        
-        # Format to list of dicts
-        return [{group_by_key: k, 'count': v} for k, v in grouped_data.items()]
+#     service = DataService()
+
+#     # Filter example (conceptual)
+#     # filtered = service.filter_production(prod_data, {"well_code": "W1"})
+#     # print(f"Filtered: {filtered}") # This would be empty list due to pass
+
+#     # Aggregate example (conceptual)
+#     # aggregated = service.aggregate_production(prod_data, ["well_code"], {"oil_prod": "sum"})
+#     # print(f"Aggregated: {aggregated}") # This would be empty list due to pass
+    
+#     # Join example (conceptual)
+#     # joined = service.join_data(prod_data, price_data, exchange_data)
+#     # print(f"Joined: {joined}") # This would be empty list due to pass
