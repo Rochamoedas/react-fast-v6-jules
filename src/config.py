@@ -5,12 +5,18 @@
 OIL_PRICE_API_URL = "YOUR_OIL_PRICE_API_URL_HERE"  # Placeholder for Oil Price API URL
 EXCHANGE_RATE_API_URL = "YOUR_EXCHANGE_RATE_API_URL_HERE"  # Placeholder for Exchange Rate API URL
 PRODUCTION_DATA_API_URL = "YOUR_PRODUCTION_DATA_API_URL_HERE"  # Placeholder for Production Data API URL
+ODATA_PRODUCTION_DATA_API_URL = "YOUR_ODATA_PRODUCTION_DATA_API_URL_HERE"  # Placeholder for OData Production Data API URL
 
-# API Keys
+# API Keys & Credentials
 OIL_PRICE_API_KEY = "YOUR_OIL_PRICE_API_KEY_HERE"  # Placeholder for Oil Price API Key
 PRODUCTION_API_KEY = "YOUR_PRODUCTION_API_KEY_HERE"  # Placeholder for Production API Key
 # Note: Depending on the exchange rate API, an API key might be needed.
 # EXCHANGE_RATE_API_KEY = "YOUR_EXCHANGE_RATE_API_KEY_HERE"
+
+# OData API Credentials (Basic Auth)
+# For production, these should be loaded from environment variables or a secure vault.
+ODATA_API_USERNAME = "YOUR_ODATA_API_USERNAME_HERE"  # Placeholder for OData API Username
+ODATA_API_PASSWORD = "YOUR_ODATA_API_PASSWORD_HERE"  # Placeholder for OData API Password
 
 # Database Path
 DATABASE_PATH = "data/local_database.duckdb"  # Path for the DuckDB database file
