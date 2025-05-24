@@ -63,7 +63,8 @@ The project is organized into the following main directories and files:
 │   │       ├── duckdb_adapter.py
 │   │       └── external_api_adapter.py
 │   ├── logging_config.py     # Logging setup
-│   └── main.py               # FastAPI application entry point, API routers, dependency injection
+│   ├── main.py               # FastAPI application entry point, API routers, dependency injection
+│   ├── routers/            # API endpoint definitions and router-specific dependencies
 └── ... (other project files like .gitignore, etc.)
 ```
 
@@ -71,8 +72,8 @@ The project is organized into the following main directories and files:
 
 *   **`src/main.py`**:
     *   Initializes the FastAPI application.
-    *   Defines API routers and endpoints.
-    *   Manages dependency injection for use cases and repositories.
+    *   Includes API routers from `src/routers/`.
+    *   Initializes global adapters and manages application lifecycle. Dependency injection providers for routers are now largely located within the `src/routers/` modules or `src/routers/dependencies.py`.
     *   Handles application startup and shutdown events (e.g., initializing database, scheduler).
 *   **`src/config.py`**:
     *   Contains application settings, including placeholders for API URLs, keys, database paths, and data schemas.
@@ -95,6 +96,7 @@ The project is organized into the following main directories and files:
         *   `duckdb_adapter.py`: Manages database connections, schema initialization, and provides repository implementations for DuckDB.
         *   `external_api_adapter.py`: (Intended to) handle communication with third-party APIs for data fetching.
         *   `apscheduler_adapter.py`: Manages scheduled tasks within the application.
+*   **`src/routers/`**: Contains FastAPI `APIRouter` modules for different API resources (e.g., wells, fields, analysis). Each module defines specific endpoints, their request/response models, and injects necessary use cases. Includes `dependencies.py` for shared router dependencies.
 *   **`requirements.txt`**:
     *   Lists all Python dependencies required to run the project.
 
@@ -197,11 +199,8 @@ This section describes the roles of the major modules and architectural componen
 ### `main.py` - FastAPI Application Core
 
 *   **API Definition:** Initializes the `FastAPI` application, serving as the central point for the API.
-*   **Routing:** Includes and configures `APIRouter` instances for different resource types (e.g., Wells, Fields, Production Data). Each router defines specific endpoints (paths, HTTP methods).
-*   **Dependency Injection (DI):** Manages the provision of dependencies to endpoint handlers. This includes:
-    *   Repositories (e.g., `IWellRepository`) for data access.
-    *   Use Cases (e.g., `CreateWellUseCase`) for encapsulating application logic.
-    *   Adapters (e.g., `DuckDBAdapter`, `ExternalApiAdapter`).
+*   **Routing:** Includes `APIRouter` instances defined in `src/routers/` (e.g., `well_router.py`, `field_router.py`). These modules now contain the specific endpoint definitions and their dependencies.
+*   **Dependency Injection (DI):** FastAPI's DI is used. Global adapters are instantiated in `main.py` or startup events. Specific dependencies for API endpoints (like use cases and repositories) are primarily managed and injected within the respective modules in `src/routers/` and `src/routers/dependencies.py`.
 *   **Lifecycle Events:** Handles application startup (`@app.on_event("startup")`) and shutdown (`@app.on_event("shutdown")`) events, used for tasks like initializing database connections, starting the scheduler, and cleaning up resources.
 *   **Global Exception Handling:** Defines handlers for custom `AppException` and generic `Exception` types to ensure consistent error responses.
 
@@ -309,12 +308,12 @@ This API provides a solid foundation for managing and analyzing oil and gas data
 ### Code Refinements & Architectural Enhancements
 
 *   **Refactor CRUD Use Cases:** Introduce a generic base class for CRUD use cases to reduce boilerplate.
-*   **Consistent Use Case Layer Application:** Ensure all endpoints (especially Production/OilPrice read/delete) use the application layer consistently.
-*   **Refactor `main.py` DI Providers:** Co-locate DI providers with their respective router modules.
-*   **Specific Exception Handling:** Improve endpoint error handling to distinguish client (4xx) vs. server (5xx) errors.
+*   **Consistent Use Case Layer Application:** Continue ensuring all endpoints consistently use the application layer for business logic orchestration.
+*   **Completed:** Refactor `main.py` DI Providers: Dependency injection providers have been co-located with their respective router modules in `src/routers/` or a shared `src/routers/dependencies.py`.
+*   **Specific Exception Handling:** The use of `AppException` and global exception handlers in `main.py` provides a good foundation. Continue ensuring consistent and specific error handling throughout all layers.
 *   **Configuration Management:** Fully implement loading sensitive data from environment variables.
 *   **Remove Unused Code:** Clean up identified unused use cases, imports, and config variables after final review.
-*   **Logging Review:** Replace `print()` statements in services/adapters with structured logging.
+*   **Logging Review:** Continue replacing `print()` statements with structured logging, particularly in `src/domain/services/data_service.py`. Other adapters and components have adopted `logging`.
 
 ### New Features & Functionality
 
