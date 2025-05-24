@@ -1,39 +1,53 @@
-# src/application/use_cases/analytical/aggregate_production_use_case.py
+import logging
 from typing import List, Dict, Any
+
 from src.domain.services.data_service import DataService
-# from src.application.dtos.response.aggregated_data_response import AggregatedDataResponse # Example DTO
+from src.domain.interfaces.repository import IProductionRepository
+from src.domain.entities.production import Production # For type hinting data from repository
 
 class AggregateProductionUseCase:
-    def __init__(self, data_service: DataService):
+    def __init__(self, production_repo: IProductionRepository, data_service: DataService):
+        self.production_repo = production_repo
         self.data_service = data_service
+        self.logger = logging.getLogger(__name__)
 
     def execute(self, group_by_fields: List[str], aggregation_functions: Dict[str, str]) -> List[Dict[str, Any]]:
         """
-        Aggregates production data.
-        (Placeholder implementation)
+        Fetches, aggregates, and returns production data.
         """
-        # Placeholder logic:
-        # 1. Call self.data_service.aggregate_production(data, group_by_fields, aggregation_functions)
-        #    - This assumes data_service.aggregate_production expects a list of Production entities,
-        #      grouping fields, and aggregation functions, then returns a list of dictionaries.
-        #    - The source of 'data' (e.g., from a repository) needs to be defined.
-        
-        # For a more complete placeholder:
-        # from src.domain.interfaces.repository import IProductionRepository
-        # def __init__(self, data_service: DataService, production_repo: IProductionRepository):
-        #    self.data_service = data_service
-        #    self.production_repo = production_repo
-        #
-        # all_production_data = self.production_repo.list()
-        # aggregated_results = self.data_service.aggregate_production(
-        #     all_production_data, group_by_fields, aggregation_functions
-        # )
-        #
-        # 2. Convert results to a specific Response DTO if needed, or return List[Dict] directly.
-        # response_list = [AggregatedDataResponse(**row) for row in aggregated_results]
-        # return response_list
-        
-        print(f"AggregateProductionUseCase: Aggregating with group_by {group_by_fields}, functions {aggregation_functions} - Placeholder")
-        # This is a placeholder; actual implementation would interact with DataService.
-        # The DataService.aggregate_production is also a placeholder.
-        return []
+        self.logger.info(
+            f"Executing AggregateProductionUseCase with group_by_fields: {group_by_fields} "
+            f"and aggregation_functions: {aggregation_functions}"
+        )
+
+        all_production_entities: List[Production] = []
+        try:
+            # Fetch all production data from the repository
+            all_production_entities = self.production_repo.list()
+            if all_production_entities is None: # Handle repository returning None explicitly
+                self.logger.warning("Production repository returned None, treating as empty list.")
+                all_production_entities = []
+            self.logger.info(f"Fetched {len(all_production_entities)} production records from repository.")
+        except Exception as e:
+            self.logger.error(f"Error fetching production data from repository: {e}", exc_info=True)
+            return [] # Return empty list on error
+
+        if not all_production_entities:
+            self.logger.info("No production data available from the repository to aggregate.")
+            return []
+
+        # Aggregate the production data using the DataService
+        aggregated_data: List[Dict[str, Any]] = []
+        try:
+            aggregated_data = self.data_service.aggregate_production(
+                all_production_entities, 
+                group_by_fields, 
+                aggregation_functions
+            )
+            self.logger.info(f"DataService returned {len(aggregated_data)} aggregated records/groups.")
+        except Exception as e:
+            self.logger.error(f"Error aggregating production data using DataService: {e}", exc_info=True)
+            return [] 
+
+        self.logger.info(f"AggregateProductionUseCase finished, returning {len(aggregated_data)} aggregated items.")
+        return aggregated_data
